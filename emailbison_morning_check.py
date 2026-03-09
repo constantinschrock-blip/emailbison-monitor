@@ -71,7 +71,7 @@ def send_slack(blocks):
 
 
 def main():
-    alerts = []
+    workspaces = []
     errors = []
 
     for ws in WORKSPACES:
@@ -86,46 +86,47 @@ def main():
                     total = detail.get("total_leads", 0)
                     contacted = detail.get("total_leads_contacted", 0)
                     remaining = max(total - contacted, 0)
-                    daily_limit = detail.get("max_new_leads_per_day", "?")
                     ws_total_remaining += remaining
                     ws_campaigns.append({
                         "campaign": detail.get("name", f"Campaign {c['id']}"),
                         "remaining": remaining,
-                        "daily_limit": daily_limit,
                     })
                 except Exception as e:
                     errors.append(f"{ws['name']} / campaign {c.get('id', '?')}: {e}")
 
-            if ws_campaigns and ws_total_remaining < THRESHOLD:
-                alerts.append({
-                    "workspace": ws["name"],
-                    "total_remaining": ws_total_remaining,
-                    "campaigns": ws_campaigns,
-                })
+            workspaces.append({
+                "name": ws["name"],
+                "total_remaining": ws_total_remaining,
+                "campaigns": ws_campaigns,
+                "needs_refill": ws_total_remaining < THRESHOLD,
+            })
         except Exception as e:
             errors.append(f"{ws['name']}: {e}")
 
-    if not alerts and not errors:
-        print("All campaigns healthy — no alerts sent.")
-        return
-
     date_str = datetime.now().strftime("%A, %b %-d")
+    needs_refill = [w for w in workspaces if w["needs_refill"]]
+    header_text = f"🔴 Refill needed — {date_str}" if needs_refill else f"✅ All good — {date_str}"
+
     blocks = [
         {
             "type": "header",
-            "text": {"type": "plain_text", "text": f"🔴 Lead Refill Needed — {date_str}"},
+            "text": {"type": "plain_text", "text": header_text},
         },
     ]
 
-    for a in alerts:
+    for ws in workspaces:
+        if not ws["campaigns"]:
+            continue
+        icon = "🔴" if ws["needs_refill"] else "✅"
         blocks.append({"type": "divider"})
         blocks.append({
             "type": "section",
-            "text": {"type": "mrkdwn", "text": f"*{a['workspace']}*  —  {a['total_remaining']} total leads remaining"},
+            "text": {"type": "mrkdwn", "text": f"{icon} *{ws['name']}*  —  {ws['total_remaining']:,} total leads remaining"},
         })
         lines = []
-        for c in a["campaigns"]:
-            lines.append(f"• _{c['campaign']}_  —  *{c['remaining']}* leads left  |  {c['daily_limit']}/day limit")
+        for c in ws["campaigns"]:
+            flag = " ⚠️" if c["remaining"] == 0 else ""
+            lines.append(f"• _{c['campaign']}_  —  *{c['remaining']:,}* leads left{flag}")
         blocks.append({
             "type": "section",
             "text": {"type": "mrkdwn", "text": "\n".join(lines)},
@@ -139,7 +140,7 @@ def main():
         })
 
     send_slack(blocks)
-    print(f"Sent Slack alert: {len(alerts)} workspace(s) need refill.")
+    print(f"Sent daily report. {len(needs_refill)} workspace(s) need refill.")
 
 
 if __name__ == "__main__":
