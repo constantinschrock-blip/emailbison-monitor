@@ -1,0 +1,22 @@
+name: EmailBison Morning Check
+
+on:
+  schedule:
+    - cron: "0 8 * * *"  # 9am CET (UTC+1) — shifts to 10am in summer (CEST)
+  workflow_dispatch:       # allows manual trigger from GitHub UI
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install requests
+
+      - run: python emailbison_morning_check.py
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
