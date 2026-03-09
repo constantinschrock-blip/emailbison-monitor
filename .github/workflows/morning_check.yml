@@ -20,3 +20,7 @@ jobs:
       - run: python emailbison_morning_check.py
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+
+      - run: python domain_health_check.py
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
