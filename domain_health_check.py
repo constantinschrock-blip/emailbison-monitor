@@ -12,7 +12,7 @@ from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 
-SLACK_WEBHOOK = os.environ["SLACK_WEBHOOK"]
+SLACK_WEBHOOK = os.environ.get("SLACK_WEBHOOK_HEALTH") or os.environ["SLACK_WEBHOOK"]
 REPLY_RATE_THRESHOLD = 0.01   # 1%
 MIN_SENT = 100                 # ignore accounts/domains with fewer sent emails
 BASE_URL = "https://send.cleanleadsolution.com"

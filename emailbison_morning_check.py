@@ -59,6 +59,22 @@ def get_campaign_detail(api_key, campaign_id):
     return data.get("data", data) if isinstance(data, dict) else data
 
 
+def get_today_sending_schedule(api_key):
+    """Fetch emails_being_sent today for all campaigns. Returns {campaign_id: count}."""
+    try:
+        resp = requests.get(
+            f"{BASE_URL}/api/campaigns/sending-schedules",
+            headers=headers(api_key),
+            json={"day": "today"},
+            timeout=15,
+        )
+        resp.raise_for_status()
+        data = resp.json().get("data", [])
+        return {item["campaign_id"]: item.get("emails_being_sent", 0) for item in data}
+    except Exception:
+        return {}
+
+
 def send_slack(blocks):
     requests.post(SLACK_WEBHOOK, json={"blocks": blocks}, timeout=10)
 
@@ -72,6 +88,7 @@ def main():
             campaigns = get_active_campaigns(ws["api_key"])
             ws_campaigns = []
             ws_total_remaining = 0
+            today_schedule = get_today_sending_schedule(ws["api_key"])
 
             for c in campaigns:
                 try:
@@ -80,9 +97,11 @@ def main():
                     contacted = detail.get("total_leads_contacted", 0)
                     remaining = max(total - contacted, 0)
                     ws_total_remaining += remaining
+                    emails_today = today_schedule.get(c["id"])
                     ws_campaigns.append({
                         "campaign": detail.get("name", f"Campaign {c['id']}"),
                         "remaining": remaining,
+                        "emails_today": emails_today,
                     })
                 except Exception as e:
                     errors.append(f"{ws['name']} / campaign {c.get('id', '?')}: {e}")
@@ -119,7 +138,8 @@ def main():
         lines = []
         for c in ws["campaigns"]:
             flag = " ⚠️" if c["remaining"] == 0 else ""
-            lines.append(f"• _{c['campaign']}_  —  *{c['remaining']:,}* leads left{flag}")
+            today = f"  —  *{c['emails_today']:,}* sending today" if c.get("emails_today") is not None else ""
+            lines.append(f"• _{c['campaign']}_  —  *{c['remaining']:,}* leads left{flag}{today}")
         blocks.append({
             "type": "section",
             "text": {"type": "mrkdwn", "text": "\n".join(lines)},

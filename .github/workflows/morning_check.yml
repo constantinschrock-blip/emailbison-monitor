@@ -26,6 +26,7 @@ jobs:
         run: python domain_health_check.py
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_WEBHOOK_HEALTH: ${{ secrets.SLACK_WEBHOOK_HEALTH }}
 
       - name: Daily reply rate report
         run: python daily_snapshot.py
