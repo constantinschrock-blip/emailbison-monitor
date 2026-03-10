@@ -63,32 +63,61 @@ def get_sending_schedule(api_key, day):
         return None
 
 
-def get_workspace_capacity(api_key):
-    """Sum daily_limit for all connected sender email accounts in the workspace."""
-    try:
-        all_accounts = []
-        page = 1
-        while True:
+def get_all_sender_emails(api_key):
+    """Fetch all sender email accounts in the workspace."""
+    all_accounts = []
+    page = 1
+    while True:
+        resp = requests.get(
+            f"{BASE_URL}/api/sender-emails",
+            headers=headers(api_key),
+            params={"page": page},
+            timeout=15,
+        )
+        resp.raise_for_status()
+        body = resp.json()
+        data = body.get("data", [])
+        if not data:
+            break
+        all_accounts.extend(data)
+        last_page = body.get("meta", {}).get("last_page", 1)
+        if page >= last_page:
+            break
+        page += 1
+    return all_accounts
+
+
+def get_active_sender_ids(api_key, campaign_ids):
+    """Return set of sender email IDs assigned to any of the given active campaigns."""
+    active_ids = set()
+    for cid in campaign_ids:
+        try:
             resp = requests.get(
-                f"{BASE_URL}/api/sender-emails",
+                f"{BASE_URL}/api/campaigns/{cid}/sender-emails",
                 headers=headers(api_key),
-                params={"page": page},
                 timeout=15,
             )
             resp.raise_for_status()
-            body = resp.json()
-            data = body.get("data", [])
-            if not data:
-                break
-            all_accounts.extend(data)
-            last_page = body.get("meta", {}).get("last_page", 1)
-            if page >= last_page:
-                break
-            page += 1
+            for a in resp.json().get("data", []):
+                active_ids.add(a["id"])
+        except Exception:
+            pass
+    return active_ids
+
+
+def get_workspace_capacity(api_key, campaign_ids):
+    """Sum daily_limit for connected accounts that are assigned to active campaigns."""
+    try:
+        all_accounts = get_all_sender_emails(api_key)
+        active_ids = get_active_sender_ids(api_key, campaign_ids)
         connected = [a for a in all_accounts if a.get("status") == "Connected"]
-        return sum(a.get("daily_limit", 0) or 0 for a in connected)
+        in_use = [a for a in connected if a["id"] in active_ids]
+        idle   = [a for a in connected if a["id"] not in active_ids]
+        capacity_in_use = sum(a.get("daily_limit", 0) or 0 for a in in_use)
+        capacity_idle   = sum(a.get("daily_limit", 0) or 0 for a in idle)
+        return capacity_in_use, capacity_idle
     except Exception:
-        return None
+        return None, None
 
 
 def get_campaign_detail(api_key, campaign_id):
@@ -125,7 +154,7 @@ def main():
 
     for ws in WORKSPACES:
         try:
-            capacity = get_workspace_capacity(ws["api_key"])
+            capacity, capacity_idle = get_workspace_capacity(ws["api_key"], [c["id"] for c in campaigns])
             today     = get_sending_schedule(ws["api_key"], "today")
             tomorrow  = get_sending_schedule(ws["api_key"], "tomorrow")
             dat       = get_sending_schedule(ws["api_key"], "day_after_tomorrow")
@@ -156,6 +185,7 @@ def main():
             workspaces.append({
                 "name": ws["name"],
                 "capacity": capacity,
+                "capacity_idle": capacity_idle,
                 "today": today,
                 "tomorrow": tomorrow,
                 "dat": dat,
@@ -181,6 +211,8 @@ def main():
 
         icon = "🔴" if ws["needs_refill"] else "✅"
         cap = fmt(ws["capacity"])
+        idle = ws.get("capacity_idle")
+        idle_note = f"  _(+{fmt(idle)}/day idle)_" if idle else ""
 
         today_str,    _ = day_status(ws["today"],    ws["capacity"])
         tomorrow_str, _ = day_status(ws["tomorrow"],  ws["capacity"])
@@ -192,7 +224,7 @@ def main():
             "text": {
                 "type": "mrkdwn",
                 "text": (
-                    f"{icon} *{ws['name']}*  —  capacity: *{cap}/day*  |  {ws['total_remaining']:,} leads remaining\n"
+                    f"{icon} *{ws['name']}*  —  active capacity: *{cap}/day*{idle_note}  |  {ws['total_remaining']:,} leads remaining\n"
                     f"Today: {today_str}  |  Tomorrow: {tomorrow_str}  |  +2 days: {dat_str}"
                 ),
             },
