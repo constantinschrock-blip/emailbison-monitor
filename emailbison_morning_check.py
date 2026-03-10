@@ -4,24 +4,16 @@ EmailBison Morning Check
 Alerts via Slack when active campaigns have fewer than THRESHOLD leads remaining.
 """
 
+import json
 import os
 import requests
 from datetime import datetime
+from pathlib import Path
 
 SLACK_WEBHOOK = os.environ["SLACK_WEBHOOK"]
 THRESHOLD = 1500
 BASE_URL = "https://send.cleanleadsolution.com"
-
-WORKSPACES = [
-    {"name": "All Pro Cleaning Systems | Atlanta, GA", "api_key": "7|VIaEykaex8XWu553UTRgiM11rsvi8WlmiBhq4FMl6ea3b721"},
-    {"name": "EdenSpokane",                            "api_key": "10|6qqezrdvL0wRtF6D6qO2djbUdjr2koWLJmhtUhaB513c71e3"},
-    {"name": "HealthPoint",                            "api_key": "11|KV6Apy8YtBtSAzc32NhvPeape1PQ2JFsW8mkUCAxefc515e8"},
-    {"name": "eMop - Dublin",                          "api_key": "15|Z4A5VPHBY7YhLFMiOheJwQqUi2eiWqhOy8UEeC4wcd504acb"},
-    {"name": "On Point Pressure Washing",              "api_key": "16|B2ClBHxtXLbLehYXbO0OUTrSBAH1hOHt6VF7oHYla39a9ae7"},
-    {"name": "Well-Polished",                          "api_key": "20|VfwL9TxskQ47NCp5vdcieV4iCF8kWTBrf0L8So4753191c75"},
-    {"name": "eMop",                                   "api_key": "21|dkGsbKloL6LmeLn7VVW54EugWkR1dLoTJualVEOHa044232e"},
-    {"name": "Calibre Cleaning",                       "api_key": "22|9aWzWhw8QHXleaIUSPXGVLqZZk08nlu0Elfx6pXQdae3b27e"},
-]
+WORKSPACES = json.loads((Path(__file__).parent / "workspaces.json").read_text())
 
 
 def headers(api_key):
