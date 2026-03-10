@@ -113,14 +113,18 @@ def get_active_sender_ids(api_key, campaign_ids):
     return active_ids
 
 
+def is_burned(account):
+    return any(t.get("name", "").lower() == "burned" for t in (account.get("tags") or []))
+
+
 def get_workspace_capacity(api_key, campaign_ids):
-    """Sum daily_limit for connected accounts that are assigned to active campaigns."""
+    """Sum daily_limit for connected, non-burned accounts assigned to active campaigns."""
     try:
         all_accounts = get_all_sender_emails(api_key)
         active_ids = get_active_sender_ids(api_key, campaign_ids)
-        connected = [a for a in all_accounts if a.get("status") == "Connected"]
-        in_use = [a for a in connected if a["id"] in active_ids]
-        idle   = [a for a in connected if a["id"] not in active_ids]
+        usable = [a for a in all_accounts if a.get("status") == "Connected" and not is_burned(a)]
+        in_use = [a for a in usable if a["id"] in active_ids]
+        idle   = [a for a in usable if a["id"] not in active_ids]
         capacity_in_use = sum(a.get("daily_limit", 0) or 0 for a in in_use)
         capacity_idle   = sum(a.get("daily_limit", 0) or 0 for a in idle)
         return capacity_in_use, capacity_idle
