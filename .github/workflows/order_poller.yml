@@ -1,0 +1,25 @@
+name: Premium Inboxes Order Poller
+
+on:
+  schedule:
+    - cron: "0 */2 * * *"  # every 2 hours
+  workflow_dispatch:
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install requests
+
+      - name: Check order status
+        run: python check_order.py
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          PI_API_KEY: ${{ secrets.PI_API_KEY }}
+          ORDER_ID: 69b0254130479635e2cb9513
