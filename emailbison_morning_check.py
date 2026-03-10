@@ -75,17 +75,27 @@ def get_sending_schedule(api_key, day="today"):
         return {}
 
 
-def get_campaign_capacity(api_key, campaign_id):
-    """Sum daily_limit across all sender emails assigned to a campaign."""
+def get_workspace_capacity(api_key):
+    """Sum daily_limit across all sender email accounts in the workspace."""
     try:
-        resp = requests.get(
-            f"{BASE_URL}/api/campaigns/{campaign_id}/sender-emails",
-            headers=headers(api_key),
-            timeout=15,
-        )
-        resp.raise_for_status()
-        accounts = resp.json().get("data", [])
-        return sum(a.get("daily_limit", 0) or 0 for a in accounts)
+        all_accounts = []
+        page = 1
+        while True:
+            resp = requests.get(
+                f"{BASE_URL}/api/sender-emails",
+                headers=headers(api_key),
+                params={"per_page": 100, "page": page},
+                timeout=15,
+            )
+            resp.raise_for_status()
+            data = resp.json().get("data", [])
+            if not data:
+                break
+            all_accounts.extend(data)
+            if len(data) < 100:
+                break
+            page += 1
+        return sum(a.get("daily_limit", 0) or 0 for a in all_accounts)
     except Exception:
         return None
 
@@ -105,6 +115,7 @@ def main():
             ws_total_remaining = 0
             today_schedule = get_sending_schedule(ws["api_key"], "today")
             dat_schedule = get_sending_schedule(ws["api_key"], "day_after_tomorrow")
+            ws_capacity = get_workspace_capacity(ws["api_key"])
 
             for c in campaigns:
                 try:
@@ -113,28 +124,26 @@ def main():
                     contacted = detail.get("total_leads_contacted", 0)
                     remaining = max(total - contacted, 0)
                     ws_total_remaining += remaining
-                    emails_today = today_schedule.get(c["id"])
-                    emails_dat = dat_schedule.get(c["id"])
-                    capacity = get_campaign_capacity(ws["api_key"], c["id"])
-                    low_leads = (capacity is not None and emails_dat is not None
-                                 and emails_dat < capacity - 100)
                     ws_campaigns.append({
                         "campaign": detail.get("name", f"Campaign {c['id']}"),
                         "remaining": remaining,
-                        "emails_today": emails_today,
-                        "emails_dat": emails_dat,
-                        "capacity": capacity,
-                        "low_leads": low_leads,
+                        "emails_today": today_schedule.get(c["id"]),
+                        "emails_dat": dat_schedule.get(c["id"]),
                     })
                 except Exception as e:
                     errors.append(f"{ws['name']} / campaign {c.get('id', '?')}: {e}")
 
-            needs_refill = ws_total_remaining < THRESHOLD or any(c["low_leads"] for c in ws_campaigns)
+            ws_dat_total = sum(c["emails_dat"] or 0 for c in ws_campaigns if c["emails_dat"] is not None)
+            low_dat = ws_capacity is not None and ws_dat_total < ws_capacity - 100
+            needs_refill = ws_total_remaining < THRESHOLD or low_dat
             workspaces.append({
                 "name": ws["name"],
                 "total_remaining": ws_total_remaining,
                 "campaigns": ws_campaigns,
                 "needs_refill": needs_refill,
+                "ws_dat_total": ws_dat_total,
+                "ws_capacity": ws_capacity,
+                "low_dat": low_dat,
             })
         except Exception as e:
             errors.append(f"{ws['name']}: {e}")
@@ -154,21 +163,21 @@ def main():
         if not ws["campaigns"]:
             continue
         icon = "🔴" if ws["needs_refill"] else "✅"
+        cap_str = f"{ws['ws_capacity']:,}" if ws.get("ws_capacity") is not None else "?"
+        dat_str = f"{ws['ws_dat_total']:,}"
+        refill_note = f"  🔴 *only {dat_str} / {cap_str} capacity scheduled day after tomorrow*" if ws.get("low_dat") else ""
         blocks.append({"type": "divider"})
         blocks.append({
             "type": "section",
-            "text": {"type": "mrkdwn", "text": f"{icon} *{ws['name']}*  —  {ws['total_remaining']:,} total leads remaining"},
+            "text": {"type": "mrkdwn", "text": f"{icon} *{ws['name']}*  —  {ws['total_remaining']:,} leads remaining{refill_note}"},
         })
         lines = []
         for c in ws["campaigns"]:
             flag = " ⚠️" if c["remaining"] == 0 else ""
             today = f"{c['emails_today']:,}" if c.get("emails_today") is not None else "?"
             dat = f"{c['emails_dat']:,}" if c.get("emails_dat") is not None else "?"
-            cap = f"{c['capacity']:,}" if c.get("capacity") is not None else "?"
-            refill_flag = " 🔴 *refill needed*" if c.get("low_leads") else ""
             lines.append(
-                f"• _{c['campaign']}_  —  *{c['remaining']:,}* leads left{flag}\n"
-                f"  Today: *{today}*  |  Day after tomorrow: *{dat}* / {cap} capacity{refill_flag}"
+                f"• _{c['campaign']}_  —  *{c['remaining']:,}* leads left{flag}  |  today: *{today}*  /  day after tomorrow: *{dat}*"
             )
         blocks.append({
             "type": "section",
