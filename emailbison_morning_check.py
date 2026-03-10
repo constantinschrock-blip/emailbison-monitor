@@ -252,6 +252,19 @@ def main():
             "text": {"type": "mrkdwn", "text": "⚠️ *Errors:*\n" + "\n".join(f"• {e}" for e in errors)},
         })
 
+    blocks.append({"type": "divider"})
+    blocks.append({
+        "type": "actions",
+        "elements": [
+            {
+                "type": "button",
+                "text": {"type": "plain_text", "text": "🔄 Re-run check"},
+                "url": "https://github.com/constantinschrock-blip/emailbison-monitor/actions/workflows/morning_check.yml",
+                "style": "primary",
+            }
+        ],
+    })
+
     send_slack(blocks)
     refill_count = sum(1 for w in workspaces if w["needs_refill"])
     print(f"Sent report. {refill_count} workspace(s) need refill.")
