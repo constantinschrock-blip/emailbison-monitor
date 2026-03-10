@@ -25,6 +25,7 @@ WORKSPACES = [
     {"name": "On Point Pressure Washing",              "api_key": "16|B2ClBHxtXLbLehYXbO0OUTrSBAH1hOHt6VF7oHYla39a9ae7"},
     {"name": "Well-Polished",                          "api_key": "20|VfwL9TxskQ47NCp5vdcieV4iCF8kWTBrf0L8So4753191c75"},
     {"name": "eMop",                                   "api_key": "21|dkGsbKloL6LmeLn7VVW54EugWkR1dLoTJualVEOHa044232e"},
+    {"name": "Calibre Cleaning",                       "api_key": "22|9aWzWhw8QHXleaIUSPXGVLqZZk08nlu0Elfx6pXQdae3b27e"},
 ]
 
 
