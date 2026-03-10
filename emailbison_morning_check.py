@@ -114,7 +114,7 @@ def day_status(scheduled, capacity):
     """Return (display_str, is_low)."""
     if scheduled is None or capacity is None:
         return f"{fmt(scheduled)} / {fmt(capacity)}", False
-    is_low = scheduled < capacity
+    is_low = scheduled < capacity - 100
     icon = "🔴" if is_low else "✅"
     return f"{icon} {fmt(scheduled)} / {fmt(capacity)}", is_low
 
