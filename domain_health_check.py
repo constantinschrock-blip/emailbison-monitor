@@ -33,15 +33,17 @@ def get_sender_emails(api_key):
         resp = requests.get(
             f"{BASE_URL}/api/sender-emails",
             headers=headers(api_key),
-            params={"per_page": 100, "page": page},
+            params={"page": page},
             timeout=15,
         )
         resp.raise_for_status()
-        data = resp.json().get("data", [])
+        body = resp.json()
+        data = body.get("data", [])
         if not data:
             break
         all_accounts.extend(data)
-        if len(data) < 100:
+        last_page = body.get("meta", {}).get("last_page", 1)
+        if page >= last_page:
             break
         page += 1
     return all_accounts
