@@ -252,17 +252,9 @@ def main():
             "text": {"type": "mrkdwn", "text": "⚠️ *Errors:*\n" + "\n".join(f"• {e}" for e in errors)},
         })
 
-    blocks.append({"type": "divider"})
     blocks.append({
-        "type": "actions",
-        "elements": [
-            {
-                "type": "button",
-                "text": {"type": "plain_text", "text": "🔄 Re-run check"},
-                "url": "https://github.com/constantinschrock-blip/emailbison-monitor/actions/workflows/morning_check.yml",
-                "style": "primary",
-            }
-        ],
+        "type": "section",
+        "text": {"type": "mrkdwn", "text": "<https://github.com/constantinschrock-blip/emailbison-monitor/actions/workflows/morning_check.yml|🔄 Re-run check after refill>"},
     })
 
     send_slack(blocks)
