@@ -154,13 +154,13 @@ def main():
 
     for ws in WORKSPACES:
         try:
+            campaigns = get_active_campaigns(ws["api_key"])
             capacity, capacity_idle = get_workspace_capacity(ws["api_key"], [c["id"] for c in campaigns])
             today     = get_sending_schedule(ws["api_key"], "today")
             tomorrow  = get_sending_schedule(ws["api_key"], "tomorrow")
             dat       = get_sending_schedule(ws["api_key"], "day_after_tomorrow")
 
             # Per-campaign remaining leads
-            campaigns = get_active_campaigns(ws["api_key"])
             ws_campaigns = []
             ws_total_remaining = 0
             for c in campaigns:
