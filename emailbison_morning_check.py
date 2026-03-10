@@ -92,14 +92,22 @@ def get_active_sender_ids(api_key, campaign_ids):
     active_ids = set()
     for cid in campaign_ids:
         try:
-            resp = requests.get(
-                f"{BASE_URL}/api/campaigns/{cid}/sender-emails",
-                headers=headers(api_key),
-                timeout=15,
-            )
-            resp.raise_for_status()
-            for a in resp.json().get("data", []):
-                active_ids.add(a["id"])
+            page = 1
+            while True:
+                resp = requests.get(
+                    f"{BASE_URL}/api/campaigns/{cid}/sender-emails",
+                    headers=headers(api_key),
+                    params={"page": page},
+                    timeout=15,
+                )
+                resp.raise_for_status()
+                body = resp.json()
+                for a in body.get("data", []):
+                    active_ids.add(a["id"])
+                last_page = body.get("meta", {}).get("last_page", 1)
+                if page >= last_page:
+                    break
+                page += 1
         except Exception:
             pass
     return active_ids
