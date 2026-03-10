@@ -5,6 +5,9 @@ on:
     - cron: "0 8 * * *"  # 9am CET (UTC+1) — shifts to 10am in summer (CEST)
   workflow_dispatch:       # allows manual trigger from GitHub UI
 
+permissions:
+  contents: write          # needed to commit daily snapshots back to the repo
+
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -17,10 +20,25 @@ jobs:
 
       - run: pip install requests
 
-      - run: python emailbison_morning_check.py
+      - name: Lead refill report
+        run: python emailbison_morning_check.py
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
 
-      - run: python domain_health_check.py
+      - name: Domain health check
+        run: python domain_health_check.py
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+
+      - name: Daily snapshot & reply rate report
+        run: python daily_snapshot.py
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+
+      - name: Commit snapshot
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add snapshots/
+          git diff --cached --quiet || git commit -m "snapshot: $(date +%Y-%m-%d)"
+          git push
