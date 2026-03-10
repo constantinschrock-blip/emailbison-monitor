@@ -63,24 +63,16 @@ def get_active_campaigns(api_key):
 
 def get_campaign_daily_stats(api_key, campaign_id, target_date):
     """Fetch sent and replied counts for a specific campaign and date."""
-    resp = requests.get(
-        f"{BASE_URL}/api/workspaces/v1.1/line-area-chart-stats",
-        headers=headers(api_key),
-        params={
-            "start_date": str(target_date),
-            "end_date": str(target_date),
-            "campaign_id": campaign_id,
-        },
+    resp = requests.post(
+        f"{BASE_URL}/api/campaigns/{campaign_id}/stats",
+        headers={**headers(api_key), "Content-Type": "application/json"},
+        json={"start_date": str(target_date), "end_date": str(target_date)},
         timeout=15,
     )
     resp.raise_for_status()
-    data = resp.json().get("data", [])
-    sent, replied = 0, 0
-    for series in data:
-        if series.get("label") == "Sent":
-            sent = sum(v for _, v in series.get("dates", []))
-        elif series.get("label") == "Replied":
-            replied = sum(v for _, v in series.get("dates", []))
+    data = resp.json().get("data", {})
+    sent = data.get("emails_sent", 0) or 0
+    replied = data.get("unique_replies_per_contact", 0) or 0
     return sent, replied
 
 
