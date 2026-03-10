@@ -132,44 +132,45 @@ def build_report(today_snapshot, yesterday_snapshot):
         })
         return blocks
 
-    global_sent = 0
-    global_replied = 0
-    all_campaign_lines = []
-
     for ws_name, ws_today in today_snapshot["workspaces"].items():
         ws_yesterday = yesterday_snapshot.get("workspaces", {}).get(ws_name, {})
         yesterday_campaigns = ws_yesterday.get("campaigns", {})
         today_campaigns = ws_today.get("campaigns", {})
 
+        ws_sent = 0
+        ws_replied = 0
+        campaign_lines = []
+
         for cid, c_today in today_campaigns.items():
             c_yest = yesterday_campaigns.get(cid, {})
             sent_delta = calc_delta(c_today["sent"], c_yest.get("sent", 0))
             replied_delta = calc_delta(c_today["unique_replied"], c_yest.get("unique_replied", 0))
-            global_sent += sent_delta
-            global_replied += replied_delta
+            ws_sent += sent_delta
+            ws_replied += replied_delta
 
             if sent_delta > 0:
                 rate = replied_delta / sent_delta
                 rate_str = f"{rate*100:.1f}%"
                 flag = " 🔴" if rate < 0.02 else ""
-                all_campaign_lines.append(
-                    f"• [{ws_name}]  _{c_today['name']}_  —  {sent_delta} sent / {replied_delta} replied  =  *{rate_str}*{flag}"
+                campaign_lines.append(
+                    f"• _{c_today['name']}_  —  {sent_delta} sent / {replied_delta} replied  =  *{rate_str}*{flag}"
                 )
 
-    global_rate = global_replied / global_sent if global_sent > 0 else 0
-    global_rate_str = f"{global_rate*100:.1f}%"
-    global_flag = " 🔴" if global_sent > 0 and global_rate < 0.02 else ""
+        if not campaign_lines:
+            continue
 
-    blocks.append({
-        "type": "section",
-        "text": {"type": "mrkdwn", "text": f"*Overall:*  {global_sent} sent / {global_replied} replied  =  *{global_rate_str}*{global_flag}"},
-    })
+        ws_rate = ws_replied / ws_sent if ws_sent > 0 else 0
+        ws_rate_str = f"{ws_rate*100:.1f}%"
+        ws_flag = " 🔴" if ws_sent > 0 and ws_rate < 0.02 else ""
 
-    if all_campaign_lines:
         blocks.append({"type": "divider"})
         blocks.append({
             "type": "section",
-            "text": {"type": "mrkdwn", "text": "\n".join(all_campaign_lines)},
+            "text": {"type": "mrkdwn", "text": f"*{ws_name}*  —  {ws_sent} sent / {ws_replied} replied  =  *{ws_rate_str}*{ws_flag}"},
+        })
+        blocks.append({
+            "type": "section",
+            "text": {"type": "mrkdwn", "text": "\n".join(campaign_lines)},
         })
 
     return blocks
