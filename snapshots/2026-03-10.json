@@ -1,0 +1,155 @@
+{
+  "date": "2026-03-10",
+  "workspaces": {
+    "All Pro Cleaning Systems | Atlanta, GA": {
+      "campaigns": {
+        "172": {
+          "name": "New Coywriting | 9th March 2026 | Ideal Mid",
+          "sent": 775,
+          "replied": 20,
+          "unique_replied": 20,
+          "contacted": 775
+        },
+        "161": {
+          "name": "New Coywriting | 6th March 2026 | Professionals",
+          "sent": 455,
+          "replied": 8,
+          "unique_replied": 8,
+          "contacted": 455
+        },
+        "135": {
+          "name": "Pre-Warmed Accounts | DEAL HIGH | 19th Feb 2026",
+          "sent": 10182,
+          "replied": 256,
+          "unique_replied": 250,
+          "contacted": 6991
+        }
+      }
+    },
+    "EdenSpokane": {
+      "campaigns": {
+        "144": {
+          "name": "Tier 2 Recurring | All Cities | 27th Feb 2026 | No Outlook",
+          "sent": 3315,
+          "replied": 67,
+          "unique_replied": 66,
+          "contacted": 2211
+        },
+        "129": {
+          "name": "Ideal Recurring & Other Cities | 12th Feb 2026 | No Outlook",
+          "sent": 5080,
+          "replied": 158,
+          "unique_replied": 151,
+          "contacted": 2611
+        },
+        "125": {
+          "name": "Ideal Recurring & Prio Cities | 12th Feb 2026 | No Outlook",
+          "sent": 8036,
+          "replied": 211,
+          "unique_replied": 205,
+          "contacted": 4154
+        }
+      }
+    },
+    "HealthPoint": {
+      "campaigns": {
+        "154": {
+          "name": "Manufacturing, Schools, Churches | No Outlook",
+          "sent": 5150,
+          "replied": 85,
+          "unique_replied": 83,
+          "contacted": 4392
+        },
+        "111": {
+          "name": "Ideal Medium (Maricopa County) | No Outlook",
+          "sent": 14061,
+          "replied": 451,
+          "unique_replied": 445,
+          "contacted": 8789
+        },
+        "99": {
+          "name": "Ideal High (Maricopa County) | No Outlook",
+          "sent": 12946,
+          "replied": 286,
+          "unique_replied": 275,
+          "contacted": 7212
+        }
+      }
+    },
+    "eMop - Dublin": {
+      "campaigns": {
+        "137": {
+          "name": "Ideal High | 19th Feb 2026",
+          "sent": 7306,
+          "replied": 612,
+          "unique_replied": 591,
+          "contacted": 4426
+        }
+      }
+    },
+    "On Point Pressure Washing": {
+      "campaigns": {
+        "174": {
+          "name": "OnPoint Pressure Washing | 9th March 2026",
+          "sent": 1500,
+          "replied": 30,
+          "unique_replied": 28,
+          "contacted": 1500
+        },
+        "158": {
+          "name": "Professionals | 4th March 2026",
+          "sent": 663,
+          "replied": 15,
+          "unique_replied": 15,
+          "contacted": 663
+        }
+      }
+    },
+    "Well-Polished": {
+      "campaigns": {
+        "139": {
+          "name": "WS, WV, Birmingham | Ideal High",
+          "sent": 8307,
+          "replied": 333,
+          "unique_replied": 318,
+          "contacted": 5518
+        }
+      }
+    },
+    "eMop": {
+      "campaigns": {
+        "131": {
+          "name": "Ideal Medium | 15th Feb 2026 | No Outlook",
+          "sent": 18901,
+          "replied": 1056,
+          "unique_replied": 1020,
+          "contacted": 11000
+        },
+        "85": {
+          "name": "Re-Target | 25.01.2026 | Ideal Types | No Outlook",
+          "sent": 16418,
+          "replied": 428,
+          "unique_replied": 412,
+          "contacted": 8436
+        },
+        "34": {
+          "name": "Ideal Types | No Outlook | Professionals Valid",
+          "sent": 7513,
+          "replied": 197,
+          "unique_replied": 186,
+          "contacted": 4058
+        },
+        "20": {
+          "name": "Ideal Types | No Outlook",
+          "sent": 18474,
+          "replied": 857,
+          "unique_replied": 780,
+          "contacted": 9708
+        }
+      }
+    },
+    "Calibre Cleaning": {
+      "campaigns": {}
+    }
+  }
+}
