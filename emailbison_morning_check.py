@@ -172,9 +172,10 @@ def main():
             tomorrow  = get_sending_schedule(ws["api_key"], "tomorrow")
             dat       = get_sending_schedule(ws["api_key"], "day_after_tomorrow")
 
-            # Per-campaign remaining leads
+            # Per-campaign remaining leads + daily limit cap
             ws_campaigns = []
             ws_total_remaining = 0
+            ws_campaign_cap = 0
             for c in campaigns:
                 try:
                     detail = get_campaign_detail(ws["api_key"], c["id"])
@@ -182,6 +183,7 @@ def main():
                     contacted = detail.get("total_leads_contacted", 0)
                     remaining = max(total - contacted, 0)
                     ws_total_remaining += remaining
+                    ws_campaign_cap += detail.get("max_emails_per_day", 0) or 0
                     ws_campaigns.append({
                         "name": detail.get("name", f"Campaign {c['id']}"),
                         "remaining": remaining,
@@ -189,14 +191,17 @@ def main():
                 except Exception as e:
                     errors.append(f"{ws['name']} / campaign {c.get('id', '?')}: {e}")
 
-            _, low_today    = day_status(today,    capacity)
-            _, low_tomorrow = day_status(tomorrow,  capacity)
-            _, low_dat      = day_status(dat,        capacity)
+            # Effective capacity = lower of account capacity and campaign daily limit sum
+            effective_capacity = min(capacity, ws_campaign_cap) if (capacity and ws_campaign_cap) else (capacity or ws_campaign_cap)
+
+            _, low_today    = day_status(today,    effective_capacity)
+            _, low_tomorrow = day_status(tomorrow,  effective_capacity)
+            _, low_dat      = day_status(dat,        effective_capacity)
             needs_refill = low_today or low_tomorrow or low_dat
 
             workspaces.append({
                 "name": ws["name"],
-                "capacity": capacity,
+                "capacity": effective_capacity,
                 "capacity_idle": capacity_idle,
                 "today": today,
                 "tomorrow": tomorrow,
