@@ -221,7 +221,6 @@ def main():
         if not ws["campaigns"]:
             continue
 
-        icon = "🔴" if ws["needs_refill"] else "✅"
         cap = fmt(ws["capacity"])
         idle = ws.get("capacity_idle")
         idle_note = f"  _(+{fmt(idle)}/day idle)_" if idle else ""
@@ -236,7 +235,7 @@ def main():
             "text": {
                 "type": "mrkdwn",
                 "text": (
-                    f"{icon} *{ws['name']}*  —  active capacity: *{cap}/day*{idle_note}  |  {ws['total_remaining']:,} leads remaining\n"
+                    f"*{ws['name']}*  —  active capacity: *{cap}/day*{idle_note}  |  {ws['total_remaining']:,} leads remaining\n"
                     f"Today: {today_str}  |  Tomorrow: {tomorrow_str}  |  +2 days: {dat_str}"
                 ),
             },
