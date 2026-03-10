@@ -33,7 +33,7 @@ jobs:
       - name: Daily snapshot & reply rate report
         run: python daily_snapshot.py
         env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_REPORTS }}
 
       - name: Commit snapshot
         run: |
