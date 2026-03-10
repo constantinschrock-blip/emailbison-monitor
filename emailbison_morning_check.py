@@ -59,13 +59,13 @@ def get_campaign_detail(api_key, campaign_id):
     return data.get("data", data) if isinstance(data, dict) else data
 
 
-def get_today_sending_schedule(api_key):
-    """Fetch emails_being_sent today for all campaigns. Returns {campaign_id: count}."""
+def get_sending_schedule(api_key, day="today"):
+    """Fetch emails_being_sent for all campaigns on a given day. Returns {campaign_id: count}."""
     try:
         resp = requests.get(
             f"{BASE_URL}/api/campaigns/sending-schedules",
             headers=headers(api_key),
-            json={"day": "today"},
+            json={"day": day},
             timeout=15,
         )
         resp.raise_for_status()
@@ -73,6 +73,21 @@ def get_today_sending_schedule(api_key):
         return {item["campaign_id"]: item.get("emails_being_sent", 0) for item in data}
     except Exception:
         return {}
+
+
+def get_campaign_capacity(api_key, campaign_id):
+    """Sum daily_limit across all sender emails assigned to a campaign."""
+    try:
+        resp = requests.get(
+            f"{BASE_URL}/api/campaigns/{campaign_id}/sender-emails",
+            headers=headers(api_key),
+            timeout=15,
+        )
+        resp.raise_for_status()
+        accounts = resp.json().get("data", [])
+        return sum(a.get("daily_limit", 0) or 0 for a in accounts)
+    except Exception:
+        return None
 
 
 def send_slack(blocks):
@@ -88,7 +103,8 @@ def main():
             campaigns = get_active_campaigns(ws["api_key"])
             ws_campaigns = []
             ws_total_remaining = 0
-            today_schedule = get_today_sending_schedule(ws["api_key"])
+            today_schedule = get_sending_schedule(ws["api_key"], "today")
+            dat_schedule = get_sending_schedule(ws["api_key"], "day_after_tomorrow")
 
             for c in campaigns:
                 try:
@@ -98,19 +114,27 @@ def main():
                     remaining = max(total - contacted, 0)
                     ws_total_remaining += remaining
                     emails_today = today_schedule.get(c["id"])
+                    emails_dat = dat_schedule.get(c["id"])
+                    capacity = get_campaign_capacity(ws["api_key"], c["id"])
+                    low_leads = (capacity is not None and emails_dat is not None
+                                 and emails_dat < capacity - 100)
                     ws_campaigns.append({
                         "campaign": detail.get("name", f"Campaign {c['id']}"),
                         "remaining": remaining,
                         "emails_today": emails_today,
+                        "emails_dat": emails_dat,
+                        "capacity": capacity,
+                        "low_leads": low_leads,
                     })
                 except Exception as e:
                     errors.append(f"{ws['name']} / campaign {c.get('id', '?')}: {e}")
 
+            needs_refill = ws_total_remaining < THRESHOLD or any(c["low_leads"] for c in ws_campaigns)
             workspaces.append({
                 "name": ws["name"],
                 "total_remaining": ws_total_remaining,
                 "campaigns": ws_campaigns,
-                "needs_refill": ws_total_remaining < THRESHOLD,
+                "needs_refill": needs_refill,
             })
         except Exception as e:
             errors.append(f"{ws['name']}: {e}")
@@ -138,8 +162,14 @@ def main():
         lines = []
         for c in ws["campaigns"]:
             flag = " ⚠️" if c["remaining"] == 0 else ""
-            today = f"  —  *{c['emails_today']:,}* sending today" if c.get("emails_today") is not None else ""
-            lines.append(f"• _{c['campaign']}_  —  *{c['remaining']:,}* leads left{flag}{today}")
+            today = f"{c['emails_today']:,}" if c.get("emails_today") is not None else "?"
+            dat = f"{c['emails_dat']:,}" if c.get("emails_dat") is not None else "?"
+            cap = f"{c['capacity']:,}" if c.get("capacity") is not None else "?"
+            refill_flag = " 🔴 *refill needed*" if c.get("low_leads") else ""
+            lines.append(
+                f"• _{c['campaign']}_  —  *{c['remaining']:,}* leads left{flag}\n"
+                f"  Today: *{today}*  |  Day after tomorrow: *{dat}* / {cap} capacity{refill_flag}"
+            )
         blocks.append({
             "type": "section",
             "text": {"type": "mrkdwn", "text": "\n".join(lines)},
