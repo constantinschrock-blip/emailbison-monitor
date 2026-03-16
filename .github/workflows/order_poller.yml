@@ -1,8 +1,6 @@
 name: Premium Inboxes Order Poller
 
 on:
-  schedule:
-    - cron: "0 */2 * * *"  # every 2 hours
   workflow_dispatch:
 
 jobs:
